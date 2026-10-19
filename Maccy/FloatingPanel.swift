@@ -63,6 +63,11 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     applyRoundedCorners()
   }
 
+  // Swift 6.2/6.3 crash optimizing the implicit generic deinit on macOS 14.
+  // https://github.com/swiftlang/swift/issues/90625
+  @_optimize(none)
+  isolated deinit {}
+
   private func applyRoundedCorners() {
     let radius = Popup.cornerRadius + Popup.horizontalPadding
 
