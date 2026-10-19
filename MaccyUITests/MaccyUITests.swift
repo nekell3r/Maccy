@@ -96,7 +96,7 @@ class MaccyUITests: XCTestCase {
     try XCTSkipUnless(isRunningOnCI, "Changes permissions only on the disposable CI desktop")
     popUpWithMouse()
     app.typeKey(.enter, modifierFlags: [.option])
-    let permission = XCUIApplication(bundleIdentifier: "com.apple.universalaccessAuthWarn")
+    let permission = XCUIApplication(bundleIdentifier: "com.apple.accessibility.universalAccessAuthWarn")
     let openSettings = permission.buttons["Open System Settings"]
     guard openSettings.waitForExistence(timeout: 5) else { return }
     openSettings.click()
