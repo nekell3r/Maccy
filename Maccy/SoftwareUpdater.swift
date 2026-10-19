@@ -19,6 +19,7 @@ class SoftwareUpdater {
 
   init() {
     updater = updaterController.updater
+    updater.clearFeedURLFromUserDefaults()
     automaticallyChecksForUpdatesObservation = updater.observe(
       \.automaticallyChecksForUpdates,
       options: [.initial, .new, .old]

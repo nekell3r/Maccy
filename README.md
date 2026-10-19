@@ -3,10 +3,16 @@
 
 <img width="128px" src="https://maccy.app/img/maccy/Logo.png" alt="Logo" />
 
-# [Maccy](https://maccy.app)
+# Maccy — image history fork
 
-[![Downloads](https://img.shields.io/github/downloads/p0deje/Maccy/total.svg)](https://github.com/p0deje/Maccy/releases/latest)
-[![Build Status](https://img.shields.io/bitrise/716921b669780314/master?token=3pMiCb5dpFzlO-7jTYtO3Q)](https://app.bitrise.io/app/716921b669780314)
+[![Download DMG](https://img.shields.io/badge/Download-Maccy.dmg-blue)](https://github.com/nekell3r/Maccy/releases/latest/download/Maccy.dmg)
+[![Build](https://github.com/nekell3r/Maccy/actions/workflows/test.yml/badge.svg)](https://github.com/nekell3r/Maccy/actions/workflows/test.yml)
+
+Форк [p0deje/Maccy](https://github.com/p0deje/Maccy) с улучшенной историей картинок.
+**[Скачать приложение](https://github.com/nekell3r/Maccy/releases/latest/download/Maccy.dmg)** ·
+[Установка по-русски](INSTALL.ru.md) · [Все версии](https://github.com/nekell3r/Maccy/releases).
+macOS 14+, Apple Silicon и Intel. Сборка не нотарифицирована Apple; при первом запуске
+может потребоваться «Всё равно открыть» в настройках безопасности.
 
 Maccy is a lightweight clipboard manager for macOS. It keeps the history of what you copy
 and lets you quickly navigate, search, and use previous clipboard contents.
@@ -53,11 +59,32 @@ Automatic pasting requires Accessibility permission, as in upstream Maccy.
 
 ## Install
 
-Download the latest version from the [releases](https://github.com/p0deje/Maccy/releases/latest) page, or use [Homebrew](https://brew.sh/):
+Download **[Maccy.dmg](https://github.com/nekell3r/Maccy/releases/latest/download/Maccy.dmg)**,
+open it, quit the old Maccy, and drag Maccy.app into Applications. The DMG includes Russian installation instructions.
+This fork preserves the original bundle identifier and existing history/preferences; run one copy of Maccy at a time.
+Homebrew's `maccy` formula installs upstream, so use the DMG for this fork.
+
+Updates in Settings use this fork's release feed. Both the feed and update ZIP are verified with a separate Sparkle EdDSA key.
+The private key is stored in GitHub Actions secret `SPARKLE_PRIVATE_KEY` and the owner's macOS Keychain account `nekell3r.Maccy`.
+
+## Build and release
+
+With full Xcode 26 or newer selected (Command Line Tools alone are insufficient):
 
 ```sh
-brew install maccy
+./scripts/build-release.sh
 ```
+
+This builds an optimized universal app, creates `dist/Maccy.dmg` and `dist/Maccy.app.zip`,
+checks the signature, both CPU architectures and the mounted DMG, and writes `dist/SHA256SUMS`.
+The app uses an ad-hoc code signature; it is not Developer ID signed or notarized.
+
+Every push/PR runs unit tests and the full application UI suite on an isolated macOS runner.
+Successful runs produce a **Maccy-release** artifact containing the Release DMG and ZIP.
+To publish: increment `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in the Xcode project,
+update `RELEASE_NOTES.md`, push, then tag that commit (for example, `git tag v2.7.2 && git push origin v2.7.2`).
+The tag workflow repeats all checks, signs the ZIP and appcast with `SPARKLE_PRIVATE_KEY`, and publishes GitHub Releases automatically.
+The permanent download URL above always serves the latest published release. Paste UI tests send global input only on the disposable CI desktop.
 
 ## Usage
 

@@ -1,8 +1,9 @@
-name: Test Maccy
+name: Build, test and release Maccy
 
 on:
   push:
     branches: [master]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -26,13 +27,6 @@ jobs:
           -derivedDataPath build -resultBundlePath UnitTests.xcresult
           -test-timeouts-enabled YES -default-test-execution-time-allowance 30
           -only-testing:MaccyTests CODE_SIGNING_ALLOWED=NO
-      - name: Package app
-        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug/Maccy.app Maccy.app.zip
-      - name: Upload app
-        uses: actions/upload-artifact@v4
-        with:
-          name: Maccy
-          path: Maccy.app.zip
       - name: Run application UI tests
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
@@ -60,3 +54,67 @@ jobs:
           path: |
             *.xcresult
             screenshots
+
+  package:
+    needs: test
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and verify universal Release DMG
+        run: ./scripts/build-release.sh
+      - name: Smoke test the packaged app on the isolated runner
+        run: |
+          build/Build/Products/Release/Maccy.app/Contents/MacOS/Maccy \
+            -ignoreEvents YES -SUEnableAutomaticChecks NO > build/launch.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          sleep 5
+          kill -0 "$app_pid"
+          kill "$app_pid"
+          wait "$app_pid" || test "$?" -eq 143
+      - name: Sign update archive and appcast
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          test -n "$SPARKLE_PRIVATE_KEY"
+          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' build/Build/Products/Release/Maccy.app/Contents/Info.plist)
+          test "$GITHUB_REF_NAME" = "v$version"
+          signer=build/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update
+          export UPDATE_SIGNATURE
+          UPDATE_SIGNATURE=$(printf '%s' "$SPARKLE_PRIVATE_KEY" | "$signer" --ed-key-file - -p dist/Maccy.app.zip)
+          python3 scripts/create-appcast.py
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | "$signer" --ed-key-file - dist/appcast.xml
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maccy-release
+          if-no-files-found: error
+          path: dist/*
+      - name: Upload launch diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Release-diagnostics
+          path: build/launch.log
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Maccy-release
+          path: dist
+      - name: Publish tested release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag --title "Maccy $GITHUB_REF_NAME — image history" \
+            --notes-file RELEASE_NOTES.md --latest
