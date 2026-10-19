@@ -67,7 +67,6 @@ class MaccyUITests: XCTestCase {
     try? "Hello world".write(to: file2, atomically: true, encoding: .utf8)
 
     app.launchArguments.append("enable-testing")
-    app.launchArguments.append(contentsOf: ["-openPreviewAutomatically", "NO"])
     setKeyboardShortcut("popup", keyCode: kVK_ANSI_C, modifiers: cmdKey | shiftKey)
     setKeyboardShortcut("pin", keyCode: kVK_ANSI_P, modifiers: optionKey)
     setKeyboardShortcut("delete", keyCode: kVK_Delete, modifiers: optionKey)
@@ -175,6 +174,7 @@ class MaccyUITests: XCTestCase {
   }
 
   func testImagePreviewAndCopyButton() {
+    continueAfterFailure = false
     let screenshot = NSImage(size: NSSize(width: 1200, height: 800), flipped: false) { rect in
       NSColor.windowBackgroundColor.setFill()
       rect.fill()
@@ -185,13 +185,14 @@ class MaccyUITests: XCTestCase {
       return true
     }
     let imageData = screenshot.tiffRepresentation!
-    copyToClipboard(imageData, .tiff)
-    copyToClipboard(copy3)
     popUpWithMouse()
-    app.typeKey(.downArrow, modifierFlags: [])
-    app.typeKey(" ", modifierFlags: [.control])
+    copyToClipboard(imageData, .tiff)
+    let imageItem = items["Image"].firstMatch
+    XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
+    copyToClipboard(copy3)
+    hover(imageItem)
 
-    assertExists(app.images["image-preview"])
+    XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
     assertExists(app.buttons["copy-image"])
     assertExists(app.buttons["paste-image"])
     let preview = XCTAttachment(screenshot: app.screenshot())
@@ -205,6 +206,7 @@ class MaccyUITests: XCTestCase {
   }
 
   func testImageRestoredScreenshotPastesIntoTextEdit() throws {
+    continueAfterFailure = false
     try XCTSkipUnless(isRunningOnCI, "Uses an isolated CI desktop and a temporary TextEdit document")
     let textEdit = XCUIApplication(bundleIdentifier: "com.apple.TextEdit")
     self.textEdit = textEdit
@@ -214,13 +216,13 @@ class MaccyUITests: XCTestCase {
     let textView = textEdit.textViews.firstMatch
     XCTAssertTrue(textView.waitForExistence(timeout: 5))
 
+    popUpWithMouse()
     copyToClipboard(image1)
+    let imageItem = items["Image"].firstMatch
+    XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
     copyToClipboard(copy3)
-    textEdit.typeKey("c", modifierFlags: [.command, .shift])
-    waitUntilPoppedUp()
-    textEdit.typeKey(.downArrow, modifierFlags: [])
-    textEdit.typeKey(" ", modifierFlags: [.control])
-    assertExists(app.images["image-preview"])
+    hover(imageItem)
+    XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
     assertExists(app.buttons["paste-image"])
     let pasteButtonFrame = app.buttons["paste-image"].frame
     let documentWindow = textEdit.windows.firstMatch
