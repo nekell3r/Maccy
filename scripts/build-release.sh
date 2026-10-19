@@ -21,6 +21,12 @@ trap 'hdiutil detach "$mount_point" -quiet 2>/dev/null || true; rm -rf "$stage" 
 
 # Expand Xcode's bundle identifier in the sandbox's Sparkle service names.
 sed 's/$(PRODUCT_BUNDLE_IDENTIFIER)/org.p0deje.Maccy/g' Maccy/Maccy.entitlements > "$stage/entitlements.plist"
+sparkle="$app/Contents/Frameworks/Sparkle.framework"
+codesign --force --sign - "$sparkle/Versions/B/XPCServices/Installer.xpc"
+codesign --force --sign - --preserve-metadata=entitlements "$sparkle/Versions/B/XPCServices/Downloader.xpc"
+codesign --force --sign - "$sparkle/Versions/B/Autoupdate"
+codesign --force --sign - "$sparkle/Versions/B/Updater.app"
+codesign --force --sign - "$sparkle"
 codesign --force --sign - --entitlements "$stage/entitlements.plist" "$app"
 codesign --verify --deep --strict "$app"
 lipo "$app/Contents/MacOS/Maccy" -verify_arch arm64 x86_64
