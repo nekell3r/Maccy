@@ -235,11 +235,8 @@ class MaccyUITests: XCTestCase {
 
     assertPopupDismissed()
     assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
-    let attachment = NSPredicate { _, _ in
-      (textView.value as? String)?.contains("\u{FFFC}") == true
-    }
-    let pastedImage = expectation(for: attachment, evaluatedWith: textView)
-    wait(for: [pastedImage], timeout: 5)
+    let pastedImage = textView.images.firstMatch
+    XCTAssertTrue(pastedImage.waitForExistence(timeout: 5), "TextEdit did not receive an image attachment")
     let document = XCTAttachment(screenshot: textEdit.screenshot())
     document.name = "Image pasted into TextEdit"
     document.lifetime = .keepAlways
