@@ -98,8 +98,13 @@ class MaccyUITests: XCTestCase {
     app.typeKey(.enter, modifierFlags: [.option])
     let permission = XCUIApplication(bundleIdentifier: "com.apple.accessibility.universalAccessAuthWarn")
     let openSettings = permission.buttons["Open System Settings"]
-    guard openSettings.waitForExistence(timeout: 5) else { return }
-    openSettings.click()
+    if openSettings.waitForExistence(timeout: 3) {
+      openSettings.click()
+    } else {
+      NSWorkspace.shared.open(URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+      )!)
+    }
 
     let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
     let toggle = settings.switches["Maccy_Toggle"]
@@ -286,20 +291,20 @@ class MaccyUITests: XCTestCase {
     let imageItem = items["Image"].firstMatch
     XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
     copyToClipboard(copy3)
-    let origin = textEdit.frame.origin
+    let origin = textView.frame.origin
     let imageFrame = imageItem.frame
-    let imagePosition = textEdit.coordinate(withNormalizedOffset: .zero)
+    let imagePosition = textView.coordinate(withNormalizedOffset: .zero)
       .withOffset(CGVector(dx: imageFrame.midX - origin.x, dy: imageFrame.midY - origin.y))
     imagePosition.hover()
     XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
     let visibleImageFrame = imageItem.frame
-    textEdit.coordinate(withNormalizedOffset: .zero)
+    textView.coordinate(withNormalizedOffset: .zero)
       .withOffset(CGVector(dx: visibleImageFrame.midX - origin.x, dy: visibleImageFrame.midY - origin.y))
       .rightClick()
     assertExists(app.menuItems["Paste image"])
     XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
     let menuFrame = app.menuItems["Paste image"].frame
-    textEdit.coordinate(withNormalizedOffset: .zero)
+    textView.coordinate(withNormalizedOffset: .zero)
       .withOffset(CGVector(dx: menuFrame.midX - origin.x, dy: menuFrame.midY - origin.y))
       .click()
 
@@ -735,9 +740,9 @@ class MaccyUITests: XCTestCase {
     waitTillClipboardCheck()
   }
 
-  // Default interval for Maccy to check clipboard is 1 second
+  // Keep the producer responsive to lazy pasteboard format requests while Maccy polls.
   private func waitTillClipboardCheck() {
-    usleep(1_500_000)
+    RunLoop.main.run(until: Date.now.addingTimeInterval(1.5))
   }
 
   private func pin(_ title: String) {
