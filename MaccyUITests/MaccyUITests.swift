@@ -80,6 +80,11 @@ class MaccyUITests: XCTestCase {
   override func tearDown() async throws {
     try await super.tearDown()
 
+    if let textEdit, textEdit.state != .notRunning {
+      // Reset modifier state after the global paste before the next GUI test.
+      textEdit.typeKey(.escape, modifierFlags: [])
+      XCTAssertFalse(CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand))
+    }
     textEdit?.terminate()
     textEdit = nil
     app.terminate()
