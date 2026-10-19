@@ -34,6 +34,38 @@ class HistoryTests: XCTestCase { // swiftlint:disable:this type_body_length
     XCTAssertEqual(history.items.toArray(), [])
   }
 
+  func testTextAndPinnedScreenshotSurviveReopeningStorage() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let configuration = ModelConfiguration(url: directory.appendingPathComponent("Storage.sqlite"))
+    let imageData = NSImage(named: "NSInfo")!.tiffRepresentation!
+
+    do {
+      let container = try ModelContainer(for: HistoryItem.self, configurations: configuration)
+      let text = HistoryItem(contents: [HistoryItemContent(
+        type: NSPasteboard.PasteboardType.string.rawValue, value: Data("Saved text".utf8)
+      )])
+      let image = HistoryItem(contents: [HistoryItemContent(
+        type: NSPasteboard.PasteboardType.tiff.rawValue, value: imageData
+      )])
+      image.pin = "p"
+      image.title = "Saved screenshot"
+      container.mainContext.insert(text)
+      container.mainContext.insert(image)
+      try container.mainContext.save()
+    }
+
+    let reopened = try ModelContainer(for: HistoryItem.self, configurations: configuration)
+    let items = try reopened.mainContext.fetch(FetchDescriptor<HistoryItem>())
+    XCTAssertEqual(items.count, 2)
+    XCTAssertEqual(items.first(where: { $0.pin == nil })?.text, "Saved text")
+    let image = try XCTUnwrap(items.first(where: { $0.pin == "p" }))
+    XCTAssertEqual(image.title, "Saved screenshot")
+    XCTAssertEqual(image.contents.first?.value, imageData)
+    XCTAssertNotNil(image.image)
+  }
+
   func testAdding() {
     let first = history.add(historyItem("foo"))
     let second = history.add(historyItem("bar"))

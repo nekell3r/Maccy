@@ -104,6 +104,31 @@ class MaccyUITests: XCTestCase {
     assertExists(items[copy2])
   }
 
+  func testSettingsPanesAndDefaultPasteBehavior() {
+    popUpWithMouse()
+    app.typeKey(",", modifierFlags: [.command])
+    let general = app.toolbars.buttons["General"]
+    XCTAssertTrue(general.waitForExistence(timeout: 5))
+    general.click()
+    let pasteAutomatically = app.checkBoxes["Paste automatically"]
+    XCTAssertTrue(pasteAutomatically.waitForExistence(timeout: 5))
+    XCTAssertEqual(pasteAutomatically.value as? String, "0")
+    pasteAutomatically.click()
+    XCTAssertEqual(pasteAutomatically.value as? String, "1")
+    pasteAutomatically.click()
+    XCTAssertEqual(pasteAutomatically.value as? String, "0")
+
+    for title in ["Storage", "Appearance", "Ignore", "Advanced", "General"] {
+      let pane = app.toolbars.buttons[title]
+      XCTAssertTrue(pane.exists, "Missing settings pane: \(title)")
+      pane.click()
+      XCTAssertTrue(app.windows.firstMatch.exists)
+    }
+    app.typeKey("w", modifierFlags: [.command])
+    popUpWithMouse()
+    assertExists(items[copy1])
+  }
+
   func testNewCopyIsAdded() {
     popUpWithMouse()
     let copy3 = UUID().uuidString

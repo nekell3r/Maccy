@@ -69,7 +69,7 @@ The private key is stored in GitHub Actions secret `SPARKLE_PRIVATE_KEY` and the
 
 ## Build and release
 
-With full Xcode 26 or newer selected (Command Line Tools alone are insufficient):
+With full Xcode 26.3 selected (the version pinned in CI; Command Line Tools alone are insufficient):
 
 ```sh
 ./scripts/build-release.sh
