@@ -616,11 +616,6 @@ class MaccyUITests: XCTestCase {
   }
 
   private func clickStatusItem() {
-    if isRunningOnCI {
-      pressStatusItemViaAccessibility()
-      return
-    }
-
     let statusItem = app.statusItems.firstMatch
     if statusItem.waitForExistence(timeout: 3), statusItem.isHittable {
       statusItem.click()
