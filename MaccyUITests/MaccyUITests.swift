@@ -94,20 +94,30 @@ class MaccyUITests: XCTestCase {
   func testAccessibilityPermissionForPaste() throws {
     continueAfterFailure = false
     try XCTSkipUnless(isRunningOnCI, "Changes permissions only on the disposable CI desktop")
-    popUpWithMouse()
-    app.typeKey(.enter, modifierFlags: [.option])
-    let permission = XCUIApplication(bundleIdentifier: "com.apple.accessibility.universalAccessAuthWarn")
-    let openSettings = permission.buttons["Open System Settings"]
-    if openSettings.waitForExistence(timeout: 3) {
-      openSettings.click()
-    } else {
-      NSWorkspace.shared.open(URL(
-        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-      )!)
-    }
-
+    let applicationURL = try XCTUnwrap(
+      NSRunningApplication.runningApplications(withBundleIdentifier: "org.p0deje.Maccy").first?.bundleURL
+    )
+    NSWorkspace.shared.open(URL(
+      string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+    )!)
     let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+    let addApplication = settings.buttons["Add"]
+    XCTAssertTrue(addApplication.waitForExistence(timeout: 20), settings.debugDescription)
     let toggle = settings.switches["Maccy_Toggle"]
+    if !toggle.exists {
+      addApplication.click()
+      let open = settings.buttons["Open"]
+      XCTAssertTrue(open.waitForExistence(timeout: 10), settings.debugDescription)
+      settings.typeKey("g", modifierFlags: [.command, .shift])
+      copyToClipboard(applicationURL.path)
+      settings.typeKey("v", modifierFlags: [.command])
+      settings.typeKey(.return, modifierFlags: [])
+      open.click()
+    }
+    let addedApplication = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    addedApplication.name = "CI Accessibility after adding Maccy"
+    addedApplication.lifetime = .keepAlways
+    add(addedApplication)
     XCTAssertTrue(toggle.waitForExistence(timeout: 10), settings.debugDescription)
     if (toggle.value as? NSNumber)?.intValue == 0 {
       toggle.click()
