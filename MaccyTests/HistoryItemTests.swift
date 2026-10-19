@@ -69,6 +69,24 @@ class HistoryItemTests: XCTestCase {
     XCTAssertEqual(item.title, "")
   }
 
+  func testRecognizesTextInImage() async throws {
+    let image = NSImage(size: NSSize(width: 600, height: 160), flipped: false) { rect in
+      NSColor.white.setFill()
+      rect.fill()
+      NSAttributedString(
+        string: "Maccy Clipboard",
+        attributes: [.font: NSFont.systemFont(ofSize: 48), .foregroundColor: NSColor.black]
+      ).draw(at: NSPoint(x: 40, y: 60))
+      return true
+    }
+    let item = historyItem(image)
+    let recognizedText = expectation(for: NSPredicate { _, _ in
+      item.title.contains("Maccy Clipboard")
+    }, evaluatedWith: nil)
+
+    await fulfillment(of: [recognizedText], timeout: 15)
+  }
+
   func testFile() {
     let url = URL(fileURLWithPath: "/tmp/foo.bar")
     let item = historyItem(url)
