@@ -66,6 +66,7 @@ class MaccyUITests: XCTestCase {
     try? "Hello world".write(to: file2, atomically: true, encoding: .utf8)
 
     app.launchArguments.append("enable-testing")
+    app.launchArguments.append(contentsOf: ["-openPreviewAutomatically", "NO"])
     setKeyboardShortcut("popup", keyCode: kVK_ANSI_C, modifiers: cmdKey | shiftKey)
     setKeyboardShortcut("pin", keyCode: kVK_ANSI_P, modifiers: optionKey)
     setKeyboardShortcut("delete", keyCode: kVK_Delete, modifiers: optionKey)
@@ -171,7 +172,17 @@ class MaccyUITests: XCTestCase {
   }
 
   func testImagePreviewAndCopyButton() {
-    copyToClipboard(image1)
+    let screenshot = NSImage(size: NSSize(width: 1200, height: 800), flipped: false) { rect in
+      NSColor.windowBackgroundColor.setFill()
+      rect.fill()
+      NSAttributedString(
+        string: "Screenshot preview",
+        attributes: [.font: NSFont.systemFont(ofSize: 48), .foregroundColor: NSColor.labelColor]
+      ).draw(at: NSPoint(x: 80, y: 600))
+      return true
+    }
+    let imageData = screenshot.tiffRepresentation!
+    copyToClipboard(imageData, .tiff)
     copyToClipboard(copy3)
     popUpWithMouse()
     app.typeKey(.downArrow, modifierFlags: [])
@@ -180,10 +191,14 @@ class MaccyUITests: XCTestCase {
     assertExists(app.images["image-preview"])
     assertExists(app.buttons["copy-image"])
     assertExists(app.buttons["paste-image"])
+    let preview = XCTAttachment(screenshot: app.screenshot())
+    preview.name = "Image history preview"
+    preview.lifetime = .keepAlways
+    add(preview)
     hoverAndClick(app.buttons["copy-image"])
 
     assertPopupDismissed()
-    assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
+    assertPasteboardDataEquals(imageData, forType: .tiff)
   }
 
   func testImagePasteButtonInTextEdit() throws {

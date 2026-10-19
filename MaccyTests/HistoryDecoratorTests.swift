@@ -96,15 +96,21 @@ class HistoryItemDecoratorTests: XCTestCase {
   }
 
   func testCleanupCancelsPendingImageGeneration() async {
+    print("Image cleanup test: creating fixture")
     let itemDecorator = historyItemDecorator(NSImage(named: "NSApplicationIcon")!)
+    print("Image cleanup test: scheduling generation")
     itemDecorator.ensureThumbnailImage()
     itemDecorator.ensurePreviewImage()
     let thumbnailTask = itemDecorator.thumbnailImageGenerationTask
     let previewTask = itemDecorator.previewImageGenerationTask
 
+    print("Image cleanup test: clearing images")
     itemDecorator.cleanupImages()
+    print("Image cleanup test: awaiting thumbnail cancellation")
     _ = await thumbnailTask?.result
+    print("Image cleanup test: awaiting preview cancellation")
     _ = await previewTask?.result
+    print("Image cleanup test: verifying empty caches")
 
     XCTAssertNil(itemDecorator.thumbnailImage)
     XCTAssertNil(itemDecorator.previewImage)
