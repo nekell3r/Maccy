@@ -214,8 +214,10 @@ class MaccyUITests: XCTestCase {
     copyToClipboard(image1)
     copyToClipboard(copy3)
     popUpWithMouse()
-    app.typeKey(.downArrow, modifierFlags: [])
-    app.typeKey(" ", modifierFlags: [.control])
+    let imageItem = items.allElementsBoundByIndex[1]
+    hover(imageItem)
+    hoverAndClick(app.buttons["toggle-preview"])
+    assertExists(app.images["image-preview"])
     assertExists(app.buttons["paste-image"])
     hoverAndClick(app.buttons["paste-image"])
 
@@ -226,6 +228,10 @@ class MaccyUITests: XCTestCase {
     }
     let pastedImage = expectation(for: attachment, evaluatedWith: textView)
     wait(for: [pastedImage], timeout: 5)
+    let document = XCTAttachment(screenshot: textEdit.screenshot())
+    document.name = "Image pasted into TextEdit"
+    document.lifetime = .keepAlways
+    add(document)
   }
 
   func testCopyFile() {

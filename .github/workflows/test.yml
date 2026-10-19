@@ -26,6 +26,13 @@ jobs:
           -derivedDataPath build -resultBundlePath UnitTests.xcresult
           -test-timeouts-enabled YES -default-test-execution-time-allowance 30
           -only-testing:MaccyTests CODE_SIGNING_ALLOWED=NO
+      - name: Package app
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug/Maccy.app Maccy.app.zip
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maccy
+          path: Maccy.app.zip
       - name: Check image preview, copying, and pasting
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
@@ -34,19 +41,18 @@ jobs:
           -only-testing:MaccyUITests/MaccyUITests/testImagePreviewAndCopyButton
           -only-testing:MaccyUITests/MaccyUITests/testImagePasteButtonInTextEdit
           CODE_SIGNING_ALLOWED=NO
-      - name: Package app
-        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug/Maccy.app Maccy.app.zip
-      - name: Upload app
-        uses: actions/upload-artifact@v4
-        with:
-          name: Maccy
-          path: Maccy.app.zip
       - name: Export UI screenshots
         if: always()
         run: |
           if [ -d ImageUITests.xcresult ]; then
             xcrun xcresulttool export attachments --path ImageUITests.xcresult --output-path screenshots
           fi
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Screenshots
+          path: screenshots/*.png
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

@@ -34,6 +34,7 @@ struct HeaderView: View {
           tableName: "PreviewItemView",
           replacementKey: "previewKey"
         )
+        .accessibilityIdentifier("toggle-preview")
         .padding(.trailing, Popup.horizontalPadding)
       }
       .opacity(appState.searchVisible ? 1 : 0)
