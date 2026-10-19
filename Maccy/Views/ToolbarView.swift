@@ -118,23 +118,7 @@ struct ToolbarView: View {
       if !appState.navigator.selection.isEmpty {
         Spacer()
 
-        if let selectedImageItem {
-          ToolbarButton {
-            appState.history.select(selectedImageItem, flags: HistoryItemAction.copy.modifierFlags)
-          } label: {
-            Image(systemName: "doc.on.doc")
-          }
-          .shortcutKeyHelp(key: "Copy image", tableName: "PreviewItemView")
-          .accessibilityIdentifier("copy-image")
-
-          ToolbarButton {
-            appState.history.select(selectedImageItem, flags: HistoryItemAction.paste.modifierFlags)
-          } label: {
-            Image(systemName: "doc.on.clipboard")
-          }
-          .shortcutKeyHelp(key: "Paste image", tableName: "PreviewItemView")
-          .accessibilityIdentifier("paste-image")
-
+        if selectedImageItem != nil {
           ToolbarButton {
             guard let selectedImageText else { return }
             Clipboard.shared.copyInMaccy(selectedImageText)

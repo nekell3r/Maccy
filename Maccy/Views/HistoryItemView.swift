@@ -62,6 +62,31 @@ struct HistoryItemView: View {
     .onAppear {
       item.ensureThumbnailImage()
     }
+    .contextMenu {
+      if item.hasImage {
+        Button {
+          appState.history.select(item, flags: HistoryItemAction.copy.modifierFlags)
+        } label: {
+          Label {
+            Text("Copy image", tableName: "PreviewItemView")
+          } icon: {
+            Image(systemName: "doc.on.doc")
+          }
+        }
+        .accessibilityIdentifier("copy-image-menu")
+
+        Button {
+          appState.history.select(item, flags: HistoryItemAction.paste.modifierFlags)
+        } label: {
+          Label {
+            Text("Paste image", tableName: "PreviewItemView")
+          } icon: {
+            Image(systemName: "doc.on.clipboard")
+          }
+        }
+        .accessibilityIdentifier("paste-image-menu")
+      }
+    }
     .accessibilityAction(named: Text(item.isPinned ? "history_item_unpin_action" : "history_item_pin_action")) {
       appState.history.togglePin(item)
     }

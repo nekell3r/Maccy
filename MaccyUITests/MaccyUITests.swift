@@ -173,7 +173,7 @@ class MaccyUITests: XCTestCase {
     assertPasteboardDataCountEquals(image2.tiffRepresentation!.count, forType: .tiff)
   }
 
-  func testImagePreviewAndCopyButton() {
+  func testImagePreviewAndCopyMenu() {
     continueAfterFailure = false
     let screenshot = NSImage(size: NSSize(width: 1200, height: 800), flipped: false) { rect in
       NSColor.windowBackgroundColor.setFill()
@@ -184,25 +184,31 @@ class MaccyUITests: XCTestCase {
       ).draw(at: NSPoint(x: 80, y: 600))
       return true
     }
-    let imageData = screenshot.tiffRepresentation!
+    let bitmap = NSBitmapImageRep(data: screenshot.tiffRepresentation!)!
+    let imageData = bitmap.representation(using: .png, properties: [:])!
     popUpWithMouse()
-    copyToClipboard(imageData, .tiff)
+    copyToClipboard(imageData, .png)
     let imageItem = items["Image"].firstMatch
     XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
     copyToClipboard(copy3)
     hover(imageItem)
 
     XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
-    assertExists(app.buttons["copy-image"])
-    assertExists(app.buttons["paste-image"])
     let preview = XCTAttachment(screenshot: app.screenshot())
     preview.name = "Image history preview"
     preview.lifetime = .keepAlways
     add(preview)
-    hoverAndClick(app.buttons["copy-image"])
+    imageItem.rightClick()
+    assertExists(app.menuItems["Copy image"])
+    assertExists(app.menuItems["Paste image"])
+    let menu = XCTAttachment(screenshot: app.screenshot())
+    menu.name = "Image context menu"
+    menu.lifetime = .keepAlways
+    add(menu)
+    app.menuItems["Copy image"].click()
 
     assertPopupDismissed()
-    assertPasteboardDataEquals(imageData, forType: .tiff)
+    assertPasteboardDataEquals(imageData, forType: .png)
   }
 
   func testImageRestoredScreenshotPastesIntoTextEdit() throws {
@@ -223,8 +229,9 @@ class MaccyUITests: XCTestCase {
     copyToClipboard(copy3)
     hover(imageItem)
     XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
-    assertExists(app.buttons["paste-image"])
-    hoverAndClick(app.buttons["paste-image"])
+    imageItem.rightClick()
+    assertExists(app.menuItems["Paste image"])
+    app.menuItems["Paste image"].click()
 
     assertPopupDismissed()
     assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)

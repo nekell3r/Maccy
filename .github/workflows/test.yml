@@ -38,7 +38,7 @@ jobs:
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -parallel-testing-enabled NO
           -derivedDataPath build -resultBundlePath ImageUITests.xcresult
-          -only-testing:MaccyUITests/MaccyUITests/testImagePreviewAndCopyButton
+          -only-testing:MaccyUITests/MaccyUITests/testImagePreviewAndCopyMenu
           -only-testing:MaccyUITests/MaccyUITests/testImageRestoredScreenshotPastesIntoTextEdit
           CODE_SIGNING_ALLOWED=NO
       - name: Export UI screenshots
