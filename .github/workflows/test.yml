@@ -30,6 +30,13 @@ jobs:
           -derivedDataPath build -resultBundlePath UnitTests.xcresult
           -test-timeouts-enabled YES -default-test-execution-time-allowance 30
           -only-testing:MaccyTests CODE_SIGNING_ALLOWED=NO
+      - name: Grant paste permission through System Settings on the isolated runner
+        run: >-
+          xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
+          -destination 'platform=macOS' -parallel-testing-enabled NO
+          -derivedDataPath build -resultBundlePath AccessibilityTests.xcresult
+          -only-testing:MaccyUITests/MaccyUITests/testAccessibilityPermissionForPaste
+          CODE_SIGNING_ALLOWED=NO
       - name: Run application UI tests
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy

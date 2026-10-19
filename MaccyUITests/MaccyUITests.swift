@@ -91,6 +91,30 @@ class MaccyUITests: XCTestCase {
     assertExists(items[copy2])
   }
 
+  func testAccessibilityPermissionForPaste() throws {
+    continueAfterFailure = false
+    try XCTSkipUnless(isRunningOnCI, "Changes permissions only on the disposable CI desktop")
+    popUpWithMouse()
+    app.typeKey(.enter, modifierFlags: [.option])
+    let permission = XCUIApplication(bundleIdentifier: "com.apple.universalaccessAuthWarn")
+    let openSettings = permission.buttons["Open System Settings"]
+    guard openSettings.waitForExistence(timeout: 5) else { return }
+    openSettings.click()
+
+    let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+    let toggle = settings.switches["Maccy_Toggle"]
+    XCTAssertTrue(toggle.waitForExistence(timeout: 10), settings.debugDescription)
+    if toggle.value as? String == "0" {
+      toggle.click()
+    }
+    let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    screenshot.name = "CI Accessibility setup"
+    screenshot.lifetime = .keepAlways
+    add(screenshot)
+    XCTAssertEqual(toggle.value as? String, "1", settings.debugDescription)
+    settings.terminate()
+  }
+
   func testCloseWithHotkey() throws {
     popUpWithMouse()
     assertExists(items[copy1])
@@ -159,7 +183,8 @@ class MaccyUITests: XCTestCase {
   func testCopyWithClick() {
     popUpWithMouse()
     scrollIntoViewIfNeeded(items[copy2].firstMatch)
-    items[copy2].firstMatch.click()
+    hoverAndClick(items[copy2].firstMatch)
+    assertPopupDismissed()
     assertPasteboardStringEquals(copy2)
   }
 
@@ -256,11 +281,19 @@ class MaccyUITests: XCTestCase {
     let imageItem = items["Image"].firstMatch
     XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
     copyToClipboard(copy3)
-    hover(imageItem)
+    let origin = textEdit.frame.origin
+    let imageFrame = imageItem.frame
+    let imagePosition = textEdit.coordinate(withNormalizedOffset: .zero)
+      .withOffset(CGVector(dx: imageFrame.midX - origin.x, dy: imageFrame.midY - origin.y))
+    imagePosition.hover()
     XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
-    imageItem.rightClick()
+    imagePosition.rightClick()
     assertExists(app.menuItems["Paste image"])
-    app.menuItems["Paste image"].click()
+    XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
+    let menuFrame = app.menuItems["Paste image"].frame
+    textEdit.coordinate(withNormalizedOffset: .zero)
+      .withOffset(CGVector(dx: menuFrame.midX - origin.x, dy: menuFrame.midY - origin.y))
+      .click()
 
     assertPopupDismissed()
     assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
