@@ -224,7 +224,7 @@ class MaccyUITests: XCTestCase {
     textView.click()
     XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
 
-    pressStatusItemViaAccessibility()
+    textEdit.typeKey("c", modifierFlags: [.command, .shift])
     waitUntilPoppedUp()
     XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
     copyToClipboard(image1)
@@ -470,112 +470,49 @@ class MaccyUITests: XCTestCase {
   }
 
   func testOpenAndClose() throws {
-    // Simulate the popup hotkey press (Cmd + Shift + C).
-    let cDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: true)!
-    cDown.flags = [.maskCommand, .maskShift]
-    cDown.post(tap: .cghidEventTap)
-
+    XCUIElement.perform(withKeyModifiers: [.command]) {
+      XCUIElement.perform(withKeyModifiers: [.shift]) {
+        app.typeKey("c", modifierFlags: [.command, .shift])
+        waitUntilPoppedUp()
+      }
+      waitUntilPoppedUp()
+    }
     waitUntilPoppedUp()
-
-    // Release the 'C' key but keep the popup open.
-    let cUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: false)!
-    cUp.flags = [.maskCommand, .maskShift]
-    cUp.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    // Release the 'Shift' key and assert that the popup remains open - "normal" mode.
-    let shiftUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false)!
-    shiftUp.flags = [.maskCommand] // Command remains active, Shift released
-    shiftUp.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    // Release the 'CMD' key and assert that the popup remains open - "normal" mode.
-    let commandUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Command), keyDown: false)!
-    commandUp.flags = []
-    commandUp.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    // Press shortcut again and assert the window closes
-    cDown.flags = [.maskCommand, .maskShift]
-    cDown.post(tap: .cghidEventTap)
-
+    simulatePopupHotkey()
     assertPopupDismissed()
   }
 
   func testOpenAndSelectSecondItem() throws {
-    // Simulate the popup hotkey press (Cmd + Shift + C).
-    let cDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: true)!
-    cDown.flags = [.maskCommand, .maskShift]
-    cDown.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    let cUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: false)!
-    cUp.flags = [.maskCommand, .maskShift]
-    cUp.post(tap: .cghidEventTap)
-
-    // Press C 1 more time while keeping the modifier keys pressed
-    cDown.post(tap: .cghidEventTap)
-
-    // Release all modifiers keys and assert that the popup closes.
-    let modifiersUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false)!
-    modifiersUp.flags = []
-    modifiersUp.post(tap: .cghidEventTap)
-
+    XCUIElement.perform(withKeyModifiers: [.command, .shift]) {
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      waitUntilPoppedUp()
+      app.typeKey("c", modifierFlags: [.command, .shift])
+    }
     assertPopupDismissed()
     assertPasteboardStringEquals(copy2)
   }
 
   func testOpenAndSelectThirdItem() throws {
     copyToClipboard(copy3)
-
-    // Simulate the popup hotkey press (Cmd + Shift + C).
-    let cDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: true)!
-    cDown.flags = [.maskCommand, .maskShift]
-    cDown.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    let cUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: false)!
-    cUp.flags = [.maskCommand, .maskShift]
-    cUp.post(tap: .cghidEventTap)
-
-    // Press C 2 more times while keeping the modifier keys pressed
-    cDown.post(tap: .cghidEventTap)
-    cUp.post(tap: .cghidEventTap)
-    cDown.post(tap: .cghidEventTap)
-
-    // Release all modifiers keys and assert that the popup closes.
-    let modifiersUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false)!
-    modifiersUp.flags = []
-    modifiersUp.post(tap: .cghidEventTap)
-
+    XCUIElement.perform(withKeyModifiers: [.command, .shift]) {
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      waitUntilPoppedUp()
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      app.typeKey("c", modifierFlags: [.command, .shift])
+    }
     assertPopupDismissed()
     assertPasteboardStringEquals(copy2)
   }
 
   func testOpenAndSelectThirdItemRepeatedPress() throws {
     copyToClipboard(copy3)
-
-    // Simulate the popup hotkey press (Cmd + Shift + C).
-    let cDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: true)!
-    cDown.flags = [.maskCommand, .maskShift]
-    cDown.post(tap: .cghidEventTap)
-
-    waitUntilPoppedUp()
-
-    // Press C 2 more times while keeping the modifier keys pressed
-    cDown.post(tap: .cghidEventTap)
-    cDown.post(tap: .cghidEventTap)
-
-    // Release all modifiers keys and assert that the popup closes.
-    let modifiersUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false)!
-    modifiersUp.flags = []
-    modifiersUp.post(tap: .cghidEventTap)
-
+    XCUIElement.perform(withKeyModifiers: [.command, .shift]) {
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      waitUntilPoppedUp()
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      app.typeKey("c", modifierFlags: [.command, .shift])
+      XCTAssertTrue(items[copy2].exists)
+    }
     assertPopupDismissed()
     assertPasteboardStringEquals(copy2)
   }
@@ -690,26 +627,7 @@ class MaccyUITests: XCTestCase {
   }
 
   private func simulatePopupHotkey() {
-    let commandDown = CGEvent(
-      keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Command), keyDown: true)!
-    let commandUp = CGEvent(
-      keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Command), keyDown: false)!
-    let shiftDown = CGEvent(
-      keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: true)!
-    let shiftUp = CGEvent(
-      keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false)!
-    shiftDown.flags = [.maskCommand]
-    shiftUp.flags = [.maskCommand]
-    let cDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: true)!
-    let cUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_C), keyDown: false)!
-    cDown.flags = [.maskCommand, .maskShift]
-    cUp.flags = [.maskCommand, .maskShift]
-    commandDown.post(tap: .cghidEventTap)
-    shiftDown.post(tap: .cghidEventTap)
-    cDown.post(tap: .cghidEventTap)
-    cUp.post(tap: .cghidEventTap)
-    shiftUp.post(tap: .cghidEventTap)
-    commandUp.post(tap: .cghidEventTap)
+    app.typeKey("c", modifierFlags: [.command, .shift])
   }
 
   private func waitUntilPoppedUp() {
