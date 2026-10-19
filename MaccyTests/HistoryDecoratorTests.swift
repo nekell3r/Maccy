@@ -76,12 +76,15 @@ class HistoryItemDecoratorTests: XCTestCase {
     XCTAssertEqual(itemDecorator.thumbnailImage!.size, NSSize(width: 40, height: 40))
   }
 
-  func testRegeneratesImagesAfterCleanup() async {
-    let itemDecorator = historyItemDecorator(NSImage(named: "NSApplicationIcon")!)
+  func testRegeneratesImagesAfterCleanup() async throws {
+    let image = try XCTUnwrap(NSImage(named: "NSApplicationIcon"))
+    let itemDecorator = historyItemDecorator(image)
     itemDecorator.ensureThumbnailImage()
     itemDecorator.ensurePreviewImage()
-    _ = await itemDecorator.thumbnailImageGenerationTask?.result
-    _ = await itemDecorator.previewImageGenerationTask?.result
+    let thumbnailTask = try XCTUnwrap(itemDecorator.thumbnailImageGenerationTask)
+    let previewTask = try XCTUnwrap(itemDecorator.previewImageGenerationTask)
+    try await thumbnailTask.value
+    try await previewTask.value
     XCTAssertNotNil(itemDecorator.thumbnailImage)
     XCTAssertNotNil(itemDecorator.previewImage)
 
@@ -89,28 +92,24 @@ class HistoryItemDecoratorTests: XCTestCase {
     Defaults[.imageMaxHeight] = 80
     itemDecorator.ensureThumbnailImage()
     let previewImage = await itemDecorator.asyncGetPreviewImage()
-    _ = await itemDecorator.thumbnailImageGenerationTask?.result
+    let regeneratedThumbnailTask = try XCTUnwrap(itemDecorator.thumbnailImageGenerationTask)
+    try await regeneratedThumbnailTask.value
 
     XCTAssertEqual(itemDecorator.thumbnailImage?.size, NSSize(width: 80, height: 80))
     XCTAssertNotNil(previewImage)
   }
 
-  func testCleanupCancelsPendingImageGeneration() async {
-    print("Image cleanup test: creating fixture")
-    let itemDecorator = historyItemDecorator(NSImage(named: "NSApplicationIcon")!)
-    print("Image cleanup test: scheduling generation")
+  func testCleanupCancelsPendingImageGeneration() async throws {
+    let image = try XCTUnwrap(NSImage(named: "NSApplicationIcon"))
+    let itemDecorator = historyItemDecorator(image)
     itemDecorator.ensureThumbnailImage()
     itemDecorator.ensurePreviewImage()
-    let thumbnailTask = itemDecorator.thumbnailImageGenerationTask
-    let previewTask = itemDecorator.previewImageGenerationTask
+    let thumbnailTask = try XCTUnwrap(itemDecorator.thumbnailImageGenerationTask)
+    let previewTask = try XCTUnwrap(itemDecorator.previewImageGenerationTask)
 
-    print("Image cleanup test: clearing images")
     itemDecorator.cleanupImages()
-    print("Image cleanup test: awaiting thumbnail cancellation")
-    _ = await thumbnailTask?.result
-    print("Image cleanup test: awaiting preview cancellation")
-    _ = await previewTask?.result
-    print("Image cleanup test: verifying empty caches")
+    try await thumbnailTask.value
+    try await previewTask.value
 
     XCTAssertNil(itemDecorator.thumbnailImage)
     XCTAssertNil(itemDecorator.previewImage)
