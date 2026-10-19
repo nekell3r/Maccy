@@ -107,6 +107,67 @@ class ClipboardTests: XCTestCase {
     waitForExpectations(timeout: 2)
   }
 
+  func testCapturesAndRestoresImagesWithEmptyText() {
+    Defaults[.enabledPasteboardTypes] = Set(StorageType.all.types)
+    let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!
+    let formats: [(NSPasteboard.PasteboardType, NSBitmapImageRep.FileType)] = [(.png, .png), (.tiff, .tiff)]
+
+    for (type, format) in formats {
+      let imageData = bitmap.representation(using: format, properties: [:])!
+      for text: String? in [nil, "", " \n"] {
+        clipboard.clearHooks()
+        var capturedItem: HistoryItem?
+        clipboard.onNewCopy { capturedItem = $0 }
+
+        let pasteItem = NSPasteboardItem()
+        pasteItem.setData(imageData, forType: type)
+        if let text {
+          pasteItem.setString(text, forType: .string)
+        }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([pasteItem])
+        clipboard.checkForChangesInPasteboard()
+
+        XCTAssertNotNil(capturedItem, "Missing \(type.rawValue) image with text \(String(describing: text))")
+        XCTAssertEqual(capturedItem?.imageData, imageData)
+        clipboard.copy(capturedItem, removeFormatting: true)
+        XCTAssertEqual(pasteboard.data(forType: type), imageData)
+      }
+    }
+  }
+
+  func testIgnoresDisabledImagesWithEmptyText() {
+    Defaults[.enabledPasteboardTypes] = [.string]
+    var capturedItem: HistoryItem?
+    clipboard.onNewCopy { capturedItem = $0 }
+
+    let pasteItem = NSPasteboardItem()
+    pasteItem.setData(image.tiffRepresentation!, forType: .tiff)
+    pasteItem.setString("", forType: .string)
+    pasteboard.clearContents()
+    pasteboard.writeObjects([pasteItem])
+    clipboard.checkForChangesInPasteboard()
+
+    XCTAssertNil(capturedItem)
+  }
+
+  func testRemovesAllDisabledImageTypes() {
+    Defaults[.enabledPasteboardTypes] = [.string]
+    var capturedItem: HistoryItem?
+    clipboard.onNewCopy { capturedItem = $0 }
+
+    let pasteItem = NSPasteboardItem()
+    pasteItem.setString("foo", forType: .string)
+    for type in StorageType.images.types {
+      pasteItem.setData(Data([0x01]), forType: type)
+    }
+    pasteboard.clearContents()
+    pasteboard.writeObjects([pasteItem])
+    clipboard.checkForChangesInPasteboard()
+
+    XCTAssertEqual(capturedItem?.contents.map(\.type), [stringType.rawValue])
+  }
+
   func testIgnoreEventsIsEnabled() {
     Defaults[.ignoreEvents] = true
 
@@ -248,6 +309,23 @@ class ClipboardTests: XCTestCase {
     XCTAssertEqual(pasteboard.string(forType: .source), "com.foo.bar")
     XCTAssertEqual(pasteboard.string(forType: .fileURL), "file://foo.bar")
     XCTAssertNil(pasteboard.data(forType: .rtf))
+  }
+
+  func testCopyImageWithoutTextFormatting() {
+    let imageData = image.tiffRepresentation!
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = [
+      HistoryItemContent(type: stringType.rawValue, value: "caption".data(using: .utf8)!),
+      HistoryItemContent(type: tiffType.rawValue, value: imageData),
+      HistoryItemContent(type: htmlType.rawValue, value: "<b>caption</b>".data(using: .utf8)!)
+    ]
+
+    clipboard.copy(item, removeFormatting: true)
+
+    XCTAssertEqual(pasteboard.data(forType: .tiff), imageData)
+    XCTAssertEqual(pasteboard.string(forType: .string), "caption")
+    XCTAssertNil(pasteboard.data(forType: .html))
   }
 
   func testHandlesItemsWithoutData() {

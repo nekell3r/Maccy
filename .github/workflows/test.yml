@@ -1,0 +1,44 @@
+name: Test Maccy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        run: >-
+          xcodebuild test -project Maccy.xcodeproj -scheme Maccy
+          -destination 'platform=macOS' -parallel-testing-enabled NO
+          -derivedDataPath build -resultBundlePath UnitTests.xcresult
+          -only-testing:MaccyTests CODE_SIGNING_ALLOWED=NO
+      - name: Check image preview, copying, and pasting
+        run: >-
+          xcodebuild test -project Maccy.xcodeproj -scheme Maccy
+          -destination 'platform=macOS' -parallel-testing-enabled NO
+          -derivedDataPath build -resultBundlePath ImageUITests.xcresult
+          -only-testing:MaccyUITests/MaccyUITests/testImagePreviewAndCopyButton
+          -only-testing:MaccyUITests/MaccyUITests/testImagePasteButtonInTextEdit
+          CODE_SIGNING_ALLOWED=NO
+      - name: Package app
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug/Maccy.app Maccy.app.zip
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maccy
+          path: Maccy.app.zip
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: '*.xcresult'

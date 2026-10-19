@@ -136,6 +136,7 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
       return
     }
     thumbnailImageGenerationTask = Task { [weak self] in
+      guard !Task.isCancelled else { return }
       self?.generateThumbnailImage()
     }
   }
@@ -152,6 +153,7 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
       return
     }
     previewImageGenerationTask = Task { [weak self] in
+      guard !Task.isCancelled else { return }
       self?.generatePreviewImage()
     }
   }
@@ -170,6 +172,8 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   func cleanupImages() {
     thumbnailImageGenerationTask?.cancel()
     previewImageGenerationTask?.cancel()
+    thumbnailImageGenerationTask = nil
+    previewImageGenerationTask = nil
     thumbnailImage?.recache()
     previewImage?.recache()
     thumbnailImage = nil

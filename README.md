@@ -13,6 +13,13 @@ and lets you quickly navigate, search, and use previous clipboard contents.
 
 Maccy works on macOS Sonoma 14 or higher.
 
+This fork improves image history: PNG/TIFF images with empty text representations are retained,
+image data survives pasting without text formatting, and previews can be regenerated after cache cleanup.
+Select an image and open its preview to use the **Copy image** or **Paste image** toolbar button.
+Copy restores the original clipboard representations; paste also inserts them into the previously active app.
+These actions follow Maccy's existing copy/paste behavior and work independently of the default action setting.
+Automatic pasting requires Accessibility permission, as in upstream Maccy.
+
 <!-- vim-markdown-toc GFM -->
 
 * [Features](#features)

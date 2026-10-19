@@ -11,3 +11,5 @@
 "ClosePreview" = "Press {previewKey} to hide preview.";
 "CopyExtractedText" = "Copy extracted text.";
 "EditItem" = "Edit item";
+"Copy image" = "Copy image";
+"Paste image" = "Paste image";

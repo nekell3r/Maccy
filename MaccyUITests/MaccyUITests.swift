@@ -170,6 +170,49 @@ class MaccyUITests: XCTestCase {
     assertPasteboardDataCountEquals(image2.tiffRepresentation!.count, forType: .tiff)
   }
 
+  func testImagePreviewAndCopyButton() {
+    copyToClipboard(image1)
+    copyToClipboard(copy3)
+    popUpWithMouse()
+    app.typeKey(.downArrow, modifierFlags: [])
+    app.typeKey(" ", modifierFlags: [.control])
+
+    assertExists(app.images["image-preview"])
+    assertExists(app.buttons["copy-image"])
+    assertExists(app.buttons["paste-image"])
+    hoverAndClick(app.buttons["copy-image"])
+
+    assertPopupDismissed()
+    assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
+  }
+
+  func testImagePasteButtonInTextEdit() throws {
+    try XCTSkipUnless(isRunningOnCI, "Uses an isolated CI desktop and a temporary TextEdit document")
+    let textEdit = XCUIApplication(bundleIdentifier: "com.apple.TextEdit")
+    textEdit.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
+    textEdit.launch()
+    defer { textEdit.terminate() }
+    textEdit.typeKey("n", modifierFlags: [.command])
+    let textView = textEdit.textViews.firstMatch
+    XCTAssertTrue(textView.waitForExistence(timeout: 5))
+
+    copyToClipboard(image1)
+    copyToClipboard(copy3)
+    popUpWithMouse()
+    app.typeKey(.downArrow, modifierFlags: [])
+    app.typeKey(" ", modifierFlags: [.control])
+    assertExists(app.buttons["paste-image"])
+    hoverAndClick(app.buttons["paste-image"])
+
+    assertPopupDismissed()
+    assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
+    let attachment = NSPredicate { _, _ in
+      (textView.value as? String)?.contains("\u{FFFC}") == true
+    }
+    let pastedImage = expectation(for: attachment, evaluatedWith: textView)
+    wait(for: [pastedImage], timeout: 5)
+  }
+
   func testCopyFile() {
     copyToClipboard(file2)
     copyToClipboard(file1)

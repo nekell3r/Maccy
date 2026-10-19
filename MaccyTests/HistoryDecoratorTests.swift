@@ -76,6 +76,42 @@ class HistoryItemDecoratorTests: XCTestCase {
     XCTAssertEqual(itemDecorator.thumbnailImage!.size, NSSize(width: 40, height: 40))
   }
 
+  func testRegeneratesImagesAfterCleanup() async {
+    let itemDecorator = historyItemDecorator(NSImage(named: "NSApplicationIcon")!)
+    itemDecorator.ensureThumbnailImage()
+    itemDecorator.ensurePreviewImage()
+    _ = await itemDecorator.thumbnailImageGenerationTask?.result
+    _ = await itemDecorator.previewImageGenerationTask?.result
+    XCTAssertNotNil(itemDecorator.thumbnailImage)
+    XCTAssertNotNil(itemDecorator.previewImage)
+
+    itemDecorator.cleanupImages()
+    Defaults[.imageMaxHeight] = 80
+    itemDecorator.ensureThumbnailImage()
+    let previewImage = await itemDecorator.asyncGetPreviewImage()
+    _ = await itemDecorator.thumbnailImageGenerationTask?.result
+
+    XCTAssertEqual(itemDecorator.thumbnailImage?.size, NSSize(width: 80, height: 80))
+    XCTAssertNotNil(previewImage)
+  }
+
+  func testCleanupCancelsPendingImageGeneration() async {
+    let itemDecorator = historyItemDecorator(NSImage(named: "NSApplicationIcon")!)
+    itemDecorator.ensureThumbnailImage()
+    itemDecorator.ensurePreviewImage()
+    let thumbnailTask = itemDecorator.thumbnailImageGenerationTask
+    let previewTask = itemDecorator.previewImageGenerationTask
+
+    itemDecorator.cleanupImages()
+    _ = await thumbnailTask?.result
+    _ = await previewTask?.result
+
+    XCTAssertNil(itemDecorator.thumbnailImage)
+    XCTAssertNil(itemDecorator.previewImage)
+    XCTAssertNil(itemDecorator.thumbnailImageGenerationTask)
+    XCTAssertNil(itemDecorator.previewImageGenerationTask)
+  }
+
   func testFile() {
     let url = URL(fileURLWithPath: "/tmp/foo.bar")
     let itemDecorator = historyItemDecorator(url)

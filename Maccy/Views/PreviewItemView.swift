@@ -24,6 +24,8 @@ struct PreviewItemView: View {
             previewImage {
               Image(nsImage: image)
                 .resizable()
+                .accessibilityLabel(Text(item.accessibilityLabel))
+                .accessibilityIdentifier("image-preview")
             }
           } else {
             previewImage {
