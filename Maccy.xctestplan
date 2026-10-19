@@ -18,6 +18,10 @@
       {
         "key" : "CI",
         "value" : "$(CI)"
+      },
+      {
+        "key" : "MACCY_CI_PASSWORD",
+        "value" : "$(MACCY_CI_PASSWORD)"
       }
     ],
     "targetForVariableExpansion" : {

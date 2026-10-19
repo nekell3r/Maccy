@@ -106,6 +106,17 @@ class MaccyUITests: XCTestCase {
     let toggle = settings.switches["Maccy_Toggle"]
     if !toggle.exists {
       addApplication.click()
+      let passwordField = settings.secureTextFields["Password"]
+      if passwordField.waitForExistence(timeout: 5) {
+        let password = try XCTUnwrap(ProcessInfo.processInfo.environment["MACCY_CI_PASSWORD"])
+        let username = settings.sheets.textFields.firstMatch
+        username.click()
+        settings.typeKey("a", modifierFlags: [.command])
+        username.typeText("maccy-ci")
+        passwordField.click()
+        passwordField.typeText(password)
+        settings.buttons["Modify Settings"].click()
+      }
       let open = settings.buttons["Open"]
       XCTAssertTrue(open.waitForExistence(timeout: 10), settings.debugDescription)
       settings.typeKey("g", modifierFlags: [.command, .shift])
