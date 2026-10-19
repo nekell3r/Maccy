@@ -15,6 +15,7 @@ Maccy works on macOS Sonoma 14 or higher.
 
 This fork improves image history: PNG/TIFF images with empty text representations are retained,
 image data survives pasting without text formatting, and previews can be regenerated after cache cleanup.
+Text recognition runs on a dedicated serial queue so batches of images do not block Swift's async task pool.
 Select an image and open its preview to use the **Copy image** or **Paste image** toolbar button.
 Copy restores the original clipboard representations; paste also inserts them into the previously active app.
 These actions follow Maccy's existing copy/paste behavior and work independently of the default action setting.

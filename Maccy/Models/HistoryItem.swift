@@ -73,6 +73,10 @@ class HistoryItem {
     NSPasteboard.PasteboardType.notesRichText.rawValue
   ]
   private static let imageTypes: [NSPasteboard.PasteboardType] = StorageType.images.types
+  nonisolated private static let textRecognitionQueue = DispatchQueue(
+    label: "org.p0deje.Maccy.text-recognition",
+    qos: .userInitiated
+  )
 
   var application: String?
   var firstCopiedAt: Date = Date.now
@@ -249,31 +253,37 @@ class HistoryItem {
       .compactMap { $0.value }
   }
 
-  /// Runs OCR on the global concurrent executor so the main thread stays free.
-  @concurrent
+  /// Vision performs synchronous work, so keep it off Swift's cooperative executor.
   nonisolated private static func recognizeText(imageData: Data?, fileURL: URL?) async -> String? {
-    guard let data = imageData ?? fileURL.flatMap({ try? Data(contentsOf: $0) }) else {
-      return nil
+    await withCheckedContinuation { continuation in
+      textRecognitionQueue.async {
+        guard let data = imageData ?? fileURL.flatMap({ try? Data(contentsOf: $0) }) else {
+          continuation.resume(returning: nil)
+          return
+        }
+
+        let requestHandler = VNImageRequestHandler(data: data)
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.automaticallyDetectsLanguage = true
+
+        do {
+          try requestHandler.perform([request])
+        } catch {
+          print("Unable to perform the request: \(error).")
+          continuation.resume(returning: nil)
+          return
+        }
+
+        guard let observations = request.results else {
+          continuation.resume(returning: nil)
+          return
+        }
+
+        continuation.resume(returning: observations
+          .compactMap { $0.topCandidates(1).first?.string }
+          .joined(separator: "\n"))
+      }
     }
-
-    let requestHandler = VNImageRequestHandler(data: data)
-    let request = VNRecognizeTextRequest()
-    request.recognitionLevel = .accurate
-    request.automaticallyDetectsLanguage = true
-
-    do {
-      try requestHandler.perform([request])
-    } catch {
-      print("Unable to perform the request: \(error).")
-      return nil
-    }
-
-    guard let observations = request.results else {
-      return nil
-    }
-
-    return observations
-      .compactMap { $0.topCandidates(1).first?.string }
-      .joined(separator: "\n")
   }
 }
