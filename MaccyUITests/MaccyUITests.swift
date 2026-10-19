@@ -118,7 +118,7 @@ class MaccyUITests: XCTestCase {
         passwordField.typeText(password)
         settings.sheets.buttons["Modify Settings"].click()
       }
-      let open = settings.sheets.buttons["Open"]
+      let open = settings.dialogs["open-panel"].buttons["Open"]
       XCTAssertTrue(open.waitForExistence(timeout: 10), settings.debugDescription)
       settings.typeKey("g", modifierFlags: [.command, .shift])
       copyToClipboard(applicationURL.path)
