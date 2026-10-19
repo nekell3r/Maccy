@@ -23,6 +23,7 @@ private struct HistoryItemQuery {
 class MaccyUITests: XCTestCase {
   let app = XCUIApplication()
   let pasteboard = NSPasteboard.general
+  private var textEdit: XCUIApplication?
 
   let copy1 = UUID().uuidString
   let copy2 = UUID().uuidString
@@ -80,6 +81,8 @@ class MaccyUITests: XCTestCase {
   override func tearDown() async throws {
     try await super.tearDown()
 
+    textEdit?.terminate()
+    textEdit = nil
     app.terminate()
   }
 
@@ -201,22 +204,22 @@ class MaccyUITests: XCTestCase {
     assertPasteboardDataEquals(imageData, forType: .tiff)
   }
 
-  func testImagePasteButtonInTextEdit() throws {
+  func testImageRestoredScreenshotPastesIntoTextEdit() throws {
     try XCTSkipUnless(isRunningOnCI, "Uses an isolated CI desktop and a temporary TextEdit document")
     let textEdit = XCUIApplication(bundleIdentifier: "com.apple.TextEdit")
+    self.textEdit = textEdit
     textEdit.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
     textEdit.launch()
-    defer { textEdit.terminate() }
     textEdit.typeKey("n", modifierFlags: [.command])
     let textView = textEdit.textViews.firstMatch
     XCTAssertTrue(textView.waitForExistence(timeout: 5))
 
     copyToClipboard(image1)
     copyToClipboard(copy3)
-    popUpWithMouse()
-    let imageItem = items.allElementsBoundByIndex[1]
-    hover(imageItem)
-    hoverAndClick(app.buttons["toggle-preview"])
+    textEdit.typeKey("c", modifierFlags: [.command, .shift])
+    waitUntilPoppedUp()
+    textEdit.typeKey(.downArrow, modifierFlags: [])
+    textEdit.typeKey(" ", modifierFlags: [.control])
     assertExists(app.images["image-preview"])
     assertExists(app.buttons["paste-image"])
     hoverAndClick(app.buttons["paste-image"])
