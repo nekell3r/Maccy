@@ -222,7 +222,13 @@ class MaccyUITests: XCTestCase {
     textEdit.typeKey(" ", modifierFlags: [.control])
     assertExists(app.images["image-preview"])
     assertExists(app.buttons["paste-image"])
-    hoverAndClick(app.buttons["paste-image"])
+    let pasteButtonFrame = app.buttons["paste-image"].frame
+    let documentWindow = textEdit.windows.firstMatch
+    // Maccy's panel keeps TextEdit active; click without asking XCTest to activate Maccy.
+    documentWindow.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+      dx: pasteButtonFrame.midX - documentWindow.frame.minX,
+      dy: pasteButtonFrame.midY - documentWindow.frame.minY
+    )).click()
 
     assertPopupDismissed()
     assertPasteboardDataEquals(image1.tiffRepresentation!, forType: .tiff)
