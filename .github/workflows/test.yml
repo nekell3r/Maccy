@@ -30,12 +30,13 @@ jobs:
           -derivedDataPath build -resultBundlePath UnitTests.xcresult
           -test-timeouts-enabled YES -default-test-execution-time-allowance 30
           -only-testing:MaccyTests CODE_SIGNING_ALLOWED=NO
-      - name: Grant paste permission through System Settings on the isolated runner
+      - name: Verify screenshot paste and Accessibility on the isolated runner
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -parallel-testing-enabled NO
           -derivedDataPath build -resultBundlePath AccessibilityTests.xcresult
           -only-testing:MaccyUITests/MaccyUITests/testAccessibilityPermissionForPaste
+          -only-testing:MaccyUITests/MaccyUITests/testImageRestoredScreenshotPastesIntoTextEdit
           CODE_SIGNING_ALLOWED=NO
       - name: Run application UI tests
         run: >-
@@ -43,19 +44,23 @@ jobs:
           -destination 'platform=macOS' -parallel-testing-enabled NO
           -derivedDataPath build -resultBundlePath UITests.xcresult
           -only-testing:MaccyUITests
+          -skip-testing:MaccyUITests/MaccyUITests/testAccessibilityPermissionForPaste
+          -skip-testing:MaccyUITests/MaccyUITests/testImageRestoredScreenshotPastesIntoTextEdit
           CODE_SIGNING_ALLOWED=NO
       - name: Export UI screenshots
         if: always()
         run: |
-          if [ -d UITests.xcresult ]; then
-            xcrun xcresulttool export attachments --path UITests.xcresult --output-path screenshots
-          fi
+          for bundle in *Tests.xcresult; do
+            if [ -d "$bundle" ]; then
+              xcrun xcresulttool export attachments --path "$bundle" --output-path "screenshots/${bundle%.xcresult}"
+            fi
+          done
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Screenshots
-          path: screenshots/*.png
+          path: screenshots/**/*.png
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

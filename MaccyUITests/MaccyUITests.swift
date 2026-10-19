@@ -287,7 +287,10 @@ class MaccyUITests: XCTestCase {
       .withOffset(CGVector(dx: imageFrame.midX - origin.x, dy: imageFrame.midY - origin.y))
     imagePosition.hover()
     XCTAssertTrue(app.images["image-preview"].waitForExistence(timeout: 10))
-    imagePosition.rightClick()
+    let visibleImageFrame = imageItem.frame
+    textEdit.coordinate(withNormalizedOffset: .zero)
+      .withOffset(CGVector(dx: visibleImageFrame.midX - origin.x, dy: visibleImageFrame.midY - origin.y))
+      .rightClick()
     assertExists(app.menuItems["Paste image"])
     XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
     let menuFrame = app.menuItems["Paste image"].frame
