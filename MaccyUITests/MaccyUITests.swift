@@ -104,14 +104,14 @@ class MaccyUITests: XCTestCase {
     let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
     let toggle = settings.switches["Maccy_Toggle"]
     XCTAssertTrue(toggle.waitForExistence(timeout: 10), settings.debugDescription)
-    if toggle.value as? String == "0" {
+    if (toggle.value as? NSNumber)?.intValue == 0 {
       toggle.click()
     }
     let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     screenshot.name = "CI Accessibility setup"
     screenshot.lifetime = .keepAlways
     add(screenshot)
-    XCTAssertEqual(toggle.value as? String, "1", settings.debugDescription)
+    XCTAssertEqual((toggle.value as? NSNumber)?.intValue, 1, settings.debugDescription)
     settings.terminate()
   }
 
@@ -136,17 +136,22 @@ class MaccyUITests: XCTestCase {
     general.click()
     let pasteAutomatically = app.checkBoxes["Paste automatically"]
     XCTAssertTrue(pasteAutomatically.waitForExistence(timeout: 5))
-    XCTAssertEqual(pasteAutomatically.value as? String, "0")
+    XCTAssertEqual((pasteAutomatically.value as? NSNumber)?.intValue, 0)
     pasteAutomatically.click()
-    XCTAssertEqual(pasteAutomatically.value as? String, "1")
+    XCTAssertEqual((pasteAutomatically.value as? NSNumber)?.intValue, 1)
     pasteAutomatically.click()
-    XCTAssertEqual(pasteAutomatically.value as? String, "0")
+    XCTAssertEqual((pasteAutomatically.value as? NSNumber)?.intValue, 0)
 
-    for title in ["Storage", "Appearance", "Ignore", "Advanced", "General"] {
-      let pane = app.toolbars.buttons[title]
-      XCTAssertTrue(pane.exists, "Missing settings pane: \(title)")
-      pane.click()
-      XCTAssertTrue(app.windows.firstMatch.exists)
+    let panes: [(String, XCUIElement)] = [
+      ("Storage", app.checkBoxes["Images"]),
+      ("Appearance", app.staticTexts["Popup at:"]),
+      ("Ignore", app.checkBoxes["Ignore all applications except listed"]),
+      ("Advanced", app.checkBoxes["Turn off"]),
+      ("General", pasteAutomatically)
+    ]
+    for (title, content) in panes {
+      app.toolbars.buttons[title].click()
+      XCTAssertTrue(content.waitForExistence(timeout: 5), "Missing content in settings pane: \(title)")
     }
     app.typeKey("w", modifierFlags: [.command])
     popUpWithMouse()
@@ -324,10 +329,10 @@ class MaccyUITests: XCTestCase {
 
   func testCopyRTF() {
     copyToClipboard(rtf2, .rtf)
-    popUpWithHotkey()
+    popUpWithMouse()
     closePopupByClickingOutside()
     copyToClipboard(rtf1, .rtf)
-    popUpWithHotkey()
+    popUpWithMouse()
     XCTAssertEqual(Array(itemTitles.prefix(2)), ["foo", "bar"])
     scrollIntoViewIfNeeded(items["bar"].firstMatch)
     hoverAndClick(items["bar"].firstMatch)
