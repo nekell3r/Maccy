@@ -101,6 +101,7 @@ class MaccyUITests: XCTestCase {
       string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     )!)
     let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+    defer { settings.terminate() }
     let addApplication = settings.buttons["Add"]
     XCTAssertTrue(addApplication.waitForExistence(timeout: 20), settings.debugDescription)
     let toggle = settings.switches["Maccy_Toggle"]
@@ -115,9 +116,9 @@ class MaccyUITests: XCTestCase {
         username.typeText("maccy-ci")
         passwordField.click()
         passwordField.typeText(password)
-        settings.buttons["Modify Settings"].click()
+        settings.sheets.buttons["Modify Settings"].click()
       }
-      let open = settings.buttons["Open"]
+      let open = settings.sheets.buttons["Open"]
       XCTAssertTrue(open.waitForExistence(timeout: 10), settings.debugDescription)
       settings.typeKey("g", modifierFlags: [.command, .shift])
       copyToClipboard(applicationURL.path)
@@ -138,7 +139,6 @@ class MaccyUITests: XCTestCase {
     screenshot.lifetime = .keepAlways
     add(screenshot)
     XCTAssertEqual((toggle.value as? NSNumber)?.intValue, 1, settings.debugDescription)
-    settings.terminate()
   }
 
   func testCloseWithHotkey() throws {

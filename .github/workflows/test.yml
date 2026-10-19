@@ -28,10 +28,12 @@ jobs:
           dsmemberutil checkmembership -U maccy-ci -G admin
           echo "MACCY_CI_PASSWORD=$password" >> "$GITHUB_ENV"
       - name: Build app and test bundles
+        id: build
         run: >-
           xcodebuild build-for-testing -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO
       - name: Run unit tests
+        id: unit
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -parallel-testing-enabled NO
@@ -47,6 +49,7 @@ jobs:
           -only-testing:MaccyUITests/MaccyUITests/testImageRestoredScreenshotPastesIntoTextEdit
           CODE_SIGNING_ALLOWED=NO
       - name: Run application UI tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.unit.outcome == 'success' }}
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -parallel-testing-enabled NO
