@@ -221,8 +221,12 @@ class MaccyUITests: XCTestCase {
     textEdit.typeKey("n", modifierFlags: [.command])
     let textView = textEdit.textViews.firstMatch
     XCTAssertTrue(textView.waitForExistence(timeout: 5))
+    textView.click()
+    XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
 
-    popUpWithMouse()
+    pressStatusItemViaAccessibility()
+    waitUntilPoppedUp()
+    XCTAssertEqual(NSWorkspace.shared.frontmostApplication?.bundleIdentifier, "com.apple.TextEdit")
     copyToClipboard(image1)
     let imageItem = items["Image"].firstMatch
     XCTAssertTrue(imageItem.waitForExistence(timeout: 10), "Screenshot was not added to history")
