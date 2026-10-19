@@ -33,19 +33,18 @@ jobs:
         with:
           name: Maccy
           path: Maccy.app.zip
-      - name: Check image preview, copying, and pasting
+      - name: Run application UI tests
         run: >-
           xcodebuild test-without-building -project Maccy.xcodeproj -scheme Maccy
           -destination 'platform=macOS' -parallel-testing-enabled NO
-          -derivedDataPath build -resultBundlePath ImageUITests.xcresult
-          -only-testing:MaccyUITests/MaccyUITests/testImagePreviewAndCopyMenu
-          -only-testing:MaccyUITests/MaccyUITests/testImageRestoredScreenshotPastesIntoTextEdit
+          -derivedDataPath build -resultBundlePath UITests.xcresult
+          -only-testing:MaccyUITests
           CODE_SIGNING_ALLOWED=NO
       - name: Export UI screenshots
         if: always()
         run: |
-          if [ -d ImageUITests.xcresult ]; then
-            xcrun xcresulttool export attachments --path ImageUITests.xcresult --output-path screenshots
+          if [ -d UITests.xcresult ]; then
+            xcrun xcresulttool export attachments --path UITests.xcresult --output-path screenshots
           fi
       - name: Upload screenshots
         if: always()
